@@ -246,6 +246,40 @@ def main():
         for href in parsed.hrefs:
             target = target_path(href)
             if target: check(target.exists(), f"Broken guide link {slug}: {href}")
+    # Genuine editorial updates must keep their original publication dates
+    # while exposing useful, server-rendered worksheets and correct modified dates.
+    updated_guides = {
+        "corporate-awards-ceremony": ("award-run-sheet", "award-exceptions"),
+        "exhibition-booth-operations": ("booth-handoff", "booth-metrics"),
+    }
+    mod_xml = ET.parse(ROOT / "sitemap.xml").getroot()
+    ns = "{http://www.sitemaps.org/schemas/sitemap/0.9}"
+    modified = {node.findtext(ns + "loc"): node.findtext(ns + "lastmod")
+                for node in mod_xml.findall(ns + "url")}
+    shared_css = (ROOT / "assets/insight-article.css").read_text(encoding="utf-8")
+    check(".pe-scroll-table" in shared_css and "overflow-x:auto" in shared_css,
+          "Mobile worksheet scrolling stylesheet absent")
+    for slug, section_ids in updated_guides.items():
+        page = ROOT / "insight" / slug / "index.html"
+        html = page.read_text(encoding="utf-8")
+        parsed = parse_html(page)
+        url = f"{BASE}/insight/{slug}/"
+        check(parsed.canonicals == [url], f"Edited guide canonical mismatch: {slug}")
+        graph = parsed.lds[0]["@graph"]
+        article = next(node for node in graph if node["@type"] == "Article")
+        check(article["datePublished"] == "2026-10-29",
+              f"Updated guide original publication date lost: {slug}")
+        check(article["dateModified"] >= article["datePublished"]
+              and modified.get(url) == article["dateModified"],
+              f"Sitemap modified date out of sync: {slug}")
+        check(all(f'id="{section_id}"' in html for section_id in section_ids),
+              f"Updated article operational worksheets absent: {slug}")
+        check(html.count('class="pe-scroll-table"') >= 2,
+              f"Updated article missing two mobile-responsive tables: {slug}")
+        check(html.count('<th scope="col">') >= 6,
+              f"Updated article missing labelled operational matrix columns: {slug}")
+        check(len(re.sub(r"<[^>]+>", "", html)) > 4400,
+              f"Updated article practical content insufficient: {slug}")
     # Curated navigation remains static and crawlable without JavaScript.
     routes_path = ROOT / "scripts/insight-topic-journeys.json"
     check(routes_path.exists(), "Topic journey source of truth missing")
