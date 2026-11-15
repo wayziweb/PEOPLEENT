@@ -144,6 +144,16 @@ def main() -> None:
     for service in ("corporate-event", "public-event", "conference", "seminar", "academic-event", "live-streaming"):
         if f'href="/{service}/"' not in home:
             errors.append("Homepage missing service link: " + service)
+    # These editorial links must be visible in server-rendered homepage HTML,
+    # rather than relying exclusively on the XML sitemap for discovery.
+    for guide in (
+        "event-agency-checklist",
+        "event-rfp-writing",
+        "conference-operation-checklist",
+    ):
+        target = f'href="/insight/{guide}/"'
+        if target not in home:
+            errors.append("Homepage missing editorial discovery link: " + guide)
     if '<main class="deck"' not in home:
         errors.append("Homepage has no semantic main")
     for needed in ("overflow:visible;scroll-snap-type:none", ".slide [data-reveal]{opacity:1;transform:none}"):
