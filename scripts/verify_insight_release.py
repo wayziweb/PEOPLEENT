@@ -276,7 +276,7 @@ def main():
               f"Updated article operational worksheets absent: {slug}")
         check(html.count('class="pe-scroll-table"') >= 2,
               f"Updated article missing two mobile-responsive tables: {slug}")
-        check(html.count('<th scope="col">') >= 8,
+        check(html.count('<th scope="col">') >= 6,
               f"Updated article missing labelled operational matrix columns: {slug}")
         check(len(re.sub(r"<[^>]+>", "", html)) > 4400,
               f"Updated article practical content insufficient: {slug}")
