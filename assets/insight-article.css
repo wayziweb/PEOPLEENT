@@ -29,3 +29,12 @@ footer{background:var(--dark);border-top:1px solid #222;color:#777;padding:28px 
 .article-notice{font-size:13px;color:var(--muted);line-height:1.8;margin-top:20px}
 .checklist li::before{content:"✓ "}
 @media(max-width:640px){.article-toc ol{columns:1}}
+
+/* Editorial worksheets: reusable, responsive tables in practical guides. */
+.pe-scroll-table{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;margin:20px 0 28px}
+.pe-scroll-table .table{min-width:620px;width:100%;margin:0}
+.pe-scroll-table th{white-space:nowrap}
+.pe-field-steps{padding-left:25px;margin:18px 0 28px}
+.pe-field-steps li{font-size:16px;line-height:1.8;padding:7px 0;color:#383530}
+.pe-field-steps strong{font-weight:800}
+@media(max-width:640px){.pe-scroll-table .table{font-size:13px}.pe-scroll-table .table th,.pe-scroll-table .table td{padding:12px}.pe-field-steps li{font-size:15px}}
