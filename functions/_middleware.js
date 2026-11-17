@@ -1,50 +1,18 @@
-// Host-restricted GA4 instrumentation for the PageRo-owned service only.
-// No tracking on preview deployments, API, admin, or other domains.
-const HOST = 'peopleent.pagero.kr';
-const GA4_ID = 'G-501Z526B8H';
-const MARKER = 'data-pagero-portfolio-ga4';
-const ENGAGEMENT_MARKER = 'data-peopleent-engagement';
-const RESTRICTED_PATH = /^\/(?:api|admin|dashboard|account)(?:\/|$)/i;
-const PRIVATE_REVIEW_PATH = '/tools/gsc-review.html';
-
-function tag() {
-  return `<script ${MARKER}>(function(){if(location.hostname!=='${HOST}')return;window.dataLayer=window.dataLayer||[];window.gtag=window.gtag||function(){window.dataLayer.push(arguments)};window.gtag('js',new Date());window.gtag('config','${GA4_ID}');var s=document.createElement('script');s.async=true;s.src='https://www.googletagmanager.com/gtag/js?id=${GA4_ID}';document.head.appendChild(s)})();</script><script defer ${ENGAGEMENT_MARKER} src="/assets/peopleent-engagement.js"></script>`;
-}
+// Search deindexing + temporary public access suspension for PeopleEnt.
+// An HTTP 410 removes live access and tells crawlers the URL is gone.
+// This only affects the PeopleEnt Pages project; no files or content are deleted.
+const blockedResponse = () => new Response(
+  '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="robots" content="noindex,nofollow,noarchive"><meta name="viewport" content="width=device-width, initial-scale=1"></head><body>현재 사이트에 접속할 수 없습니다.</body></html>',
+  {
+    status: 410,
+    headers: {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'no-store, max-age=0',
+      'X-Robots-Tag': 'noindex, nofollow, noarchive',
+    },
+  },
+);
 
 export async function onRequest(context) {
-  const response = await context.next();
-  const url = new URL(context.request.url);
-  const type = String(response.headers.get('content-type') || '').toLowerCase();
-  const hostname = url.hostname.toLowerCase();
-
-  // Preview/branch deployments must not compete with the canonical production host.
-  // The production custom domain continues to serve indexable HTML.
-  if (hostname !== HOST && response.ok && type.includes('text/html')) {
-    const headers = new Headers(response.headers);
-    headers.set('X-Robots-Tag', 'noindex, nofollow');
-    return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
-  }
-
-  // The private CSV workspace is crawl-excluded and has no GA4 scripts.
-  // Input files are handled solely in the browser; neither analytics nor
-  // server-side handlers are attached to this page.
-  if (url.pathname === PRIVATE_REVIEW_PATH && response.ok && type.includes('text/html')) {
-    const headers = new Headers(response.headers);
-    headers.set('X-Robots-Tag', 'noindex, nofollow');
-    return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
-  }
-
-  if (context.request.method !== 'GET' || !response.ok || RESTRICTED_PATH.test(url.pathname) || !type.includes('text/html')) return response;
-
-  const html = await response.text();
-  if (!/<\/head>/i.test(html) || html.includes(MARKER)) {
-    const headers = new Headers(response.headers);
-    headers.delete('content-length');
-    return new Response(html, { status: response.status, statusText: response.statusText, headers });
-  }
-  const modified = html.replace(/<\/head>/i, tag() + '\n</head>');
-  const headers = new Headers(response.headers);
-  headers.delete('content-length');
-  headers.delete('etag');
-  return new Response(modified, { status: response.status, statusText: response.statusText, headers });
+  return blockedResponse();
 }
